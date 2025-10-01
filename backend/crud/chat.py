@@ -54,7 +54,7 @@ async def get_user_sessions(db: AsyncSession, user_id: int):
     result = await db.execute(
         select(ChatSession)
         .filter(ChatSession.user_id == user_id)
-        .order_by(ChatSession.updated_at.desc())
+        .order_by(ChatSession.updated_at.asc())
     )
     return result.scalars().all()
 
@@ -68,3 +68,16 @@ async def add_user_message_to_session(db: AsyncSession, session_id: str, content
     await db.commit()
     await db.refresh(user_message)
     return user_message
+
+async def delete_chat_session(db: AsyncSession, session_id: str):
+    # First, delete all messages associated with the session
+    await db.execute(
+        ChatMessage.__table__.delete().where(ChatMessage.chat_session_id == session_id)
+    )
+    
+    # Then, delete the session itself
+    result = await db.execute(
+        ChatSession.__table__.delete().where(ChatSession.id == session_id)
+    )
+    await db.commit()
+    return result.rowcount > 0

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { SendHorizonalIcon } from 'lucide-react';
 import MessageBubble from './components/MessageBubble';
 import SideBar from './components/SideBar';
+import ConfirmationModal from './components/ConfirmationModal';
 import './App.css';
 
 function App() {
@@ -38,6 +39,8 @@ function App() {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [chatToDelete, setChatToDelete] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Fetch chat sessions from the backend to populate the sidebar
@@ -54,13 +57,21 @@ function App() {
                 console.log('Fetched sessions:', sessions);
 
                 const formattedChatHistory: ChatHistory = {};
-                sessions.forEach((session: ChatSession) => {
+                // Sort sessions by updated_at (most recent first), falling back to created_at
+                const sortedSessions = [...sessions].sort((a, b) => {
+                    const dateA = new Date(a.updated_at || a.created_at).getTime();
+                    const dateB = new Date(b.updated_at || b.created_at).getTime();
+                    return dateB - dateA; // Newest first
+                });
+                
+                sortedSessions.forEach((session: ChatSession) => {
                     // Initialize messages as empty, they will be fetched on selection
                     formattedChatHistory[session.id] = { ...session, messages: [] }; 
                 });
                 setChatHistory(formattedChatHistory);
-                if (sessions.length > 0) {
-                    setSelectedChatId(sessions[0].id);
+                if (sortedSessions.length > 0) {
+                    // Select the most recent chat (first in the sorted array)
+                    setSelectedChatId(sortedSessions[0].id);
                 }
             } catch (error) {
                 console.error('Error fetching chat sessions:', error);
@@ -126,80 +137,116 @@ function App() {
     // Update chat history in state on message send
     const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!input.trim() || isLoading || !selectedChatId) return;
+        if (!input.trim() || isLoading) return;
 
         setIsLoading(true);
-        
-        const newUserApiMessage: ApiMessage = { 
-            id: Date.now(), // Temporary ID
-            chat_session_id: selectedChatId,
-            role: 'user',
-            content: { block_type: "text", text: input }, // Use TextBlock structure
-            created_at: new Date().toISOString()
-        };
-
-        const currentSession = chatHistory[selectedChatId];
-        const updatedMessagesForSend = [...(currentSession?.messages || []), newUserApiMessage];
-        
-        setChatHistory(prev => ({
-            ...prev,
-            [selectedChatId]: {
-                ...currentSession,
-                messages: updatedMessagesForSend,
-            } as ChatSession,
-        }));
+        const currentInput = input;
         setInput('');
 
-        try {
-            const payload = { query: input, chatId: selectedChatId };
-            const response = await fetch('http://localhost:8000/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            const aiResponseContent = data.ai_response.content; // Assuming data.ai_response.content is the LLMOutputBlock
-            const aiApiMessage: ApiMessage = { 
+        if (!selectedChatId) {
+            // This is a new chat. Optimistically update the UI with the user's message.
+            const newUserApiMessage: ApiMessage = { 
                 id: Date.now(), // Temporary ID
-                chat_session_id: selectedChatId,
-                role: 'ai',
-                content: aiResponseContent, // Directly assign the LLMOutputBlock
+                chat_session_id: 'temp-session-id', // Placeholder
+                role: 'user',
+                content: { block_type: "text", text: currentInput },
                 created_at: new Date().toISOString()
             };
+            setMessages([newUserApiMessage]);
+
+            try {
+                const payload = {
+                    user_id: 2, // Assuming user_id is 2
+                    initial_message: currentInput
+                };
+    
+                const response = await fetch('http://localhost:8000/api/v1/sessions/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+    
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+    
+                const newSession: ChatSession = await response.json();
+                // Replace the temporary message with the actual messages from the server
+                setChatHistory(prev => ({ ...prev, [newSession.id]: newSession }));
+                setSelectedChatId(newSession.id);
+                setMessages(newSession.messages);
+            } catch (error) {
+                console.error('Error creating new chat session:', error);
+                // Revert the optimistic update and show an error
+                setMessages(prev => prev.map(msg => 
+                    msg.id === newUserApiMessage.id 
+                    ? { ...msg, content: { block_type: "text", text: 'Error: Could not send message.' } } 
+                    : msg
+                ));
+            } finally {
+                setIsLoading(false);
+            }
+        } else {
+            // This is an existing chat
+            const newUserApiMessage: ApiMessage = { 
+                id: Date.now(), // Temporary ID
+                chat_session_id: selectedChatId,
+                role: 'user',
+                content: { block_type: "text", text: currentInput },
+                created_at: new Date().toISOString()
+            };
+    
+            const currentSession = chatHistory[selectedChatId];
+            const updatedMessagesForSend = [...(currentSession?.messages || []), newUserApiMessage];
             
-            setChatHistory(prev => {
-                const updatedSession = { ...prev[selectedChatId] };
-                if (updatedSession.messages) {
-                    updatedSession.messages.push(aiApiMessage);
+            setChatHistory(prev => ({
+                ...prev,
+                [selectedChatId]: {
+                    ...currentSession,
+                    messages: updatedMessagesForSend,
+                } as ChatSession,
+            }));
+            setMessages(updatedMessagesForSend);
+    
+            try {
+                const payload = { session_id: selectedChatId, user_id: 2, content: currentInput };
+                const response = await fetch('http://localhost:8000/api/v1/sessions/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+    
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                return { ...prev, [selectedChatId]: updatedSession as ChatSession };
-            });
-        } catch (error) {
-            console.error('Error sending message:', error);
-            setChatHistory(prev => {
-                const updatedSession = { ...prev[selectedChatId] };
-                if (updatedSession.messages) {
-                    // Find the last user message and update its content to show an error
-                    let lastUserMessage: ApiMessage | undefined;
-                    for (let i = updatedSession.messages.length - 1; i >= 0; i--) {
-                        if (updatedSession.messages[i].role === 'user') {
-                            lastUserMessage = updatedSession.messages[i];
-                            break;
-                        }
+    
+                const data = await response.json();
+                const userMessageFromServer: ApiMessage = data.user_message;
+                const aiMessageFromServer: ApiMessage = data.ai_response;
+    
+                setChatHistory(prev => {
+                    const updatedSession = { ...prev[selectedChatId] } as ChatSession;
+                    const prevMsgs = updatedSession.messages ? [...updatedSession.messages] : [];
+                    if (prevMsgs.length > 0) {
+                        prevMsgs.pop();
                     }
-                    if (lastUserMessage && 'text' in lastUserMessage.content) {
-                        (lastUserMessage.content as TextBlock).text = 'Error: Could not get a response.';
+                    const newMsgs = [...prevMsgs, userMessageFromServer, aiMessageFromServer];
+                    updatedSession.messages = newMsgs;
+                    return { ...prev, [selectedChatId]: updatedSession };
+                });
+                setMessages(prev => {
+                    const prevMsgs = [...prev];
+                    if (prevMsgs.length > 0) {
+                        prevMsgs.pop();
                     }
-                }
-                return { ...prev, [selectedChatId]: updatedSession as ChatSession };
-            });
-        } finally {
-            setIsLoading(false);
+                    return [...prevMsgs, userMessageFromServer, aiMessageFromServer];
+                });
+            } catch (error) {
+                console.error('Error sending message:', error);
+                // Handle error for existing chat
+            } finally {
+                setIsLoading(false);
+            }
         }
     };
 
@@ -212,33 +259,53 @@ function App() {
         setSelectedChatId(chatId);
     };
     
-    const handleNewChat = async () => {
-        try {
-            const initialMessageContent = "Hello, start a new chat!"; // Default initial message
-            const payload = {
-                user_id: 2, // Assuming user_id is 2
-                initial_message: initialMessageContent
-            };
+    const handleNewChat = () => {
+        setSelectedChatId(null);
+        setMessages([]);
+        setIsSidebarOpen(false);
+    };
 
-            const response = await fetch('http://localhost:8000/api/v1/sessions/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
+    const handleDeleteChat = (chatId: string) => {
+        setChatToDelete(chatId);
+        setIsModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!chatToDelete) return;
+
+        try {
+            const response = await fetch(`http://localhost:8000/api/v1/sessions/${chatToDelete}`, {
+                method: 'DELETE',
             });
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            const newSession: ChatSession = await response.json();
-            setChatHistory(prev => ({ ...prev, [newSession.id]: { ...newSession, messages: [] } })); // Initialize messages as empty
-            setSelectedChatId(newSession.id);
-            setIsSidebarOpen(false); // Close sidebar on new chat
+
+            const newChatHistory = { ...chatHistory };
+            delete newChatHistory[chatToDelete];
+            setChatHistory(newChatHistory);
+
+            if (selectedChatId === chatToDelete) {
+                const remainingChats = Object.values(newChatHistory)
+                    .sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime());
+                
+                if (remainingChats.length > 0) {
+                    setSelectedChatId(remainingChats[0].id);
+                } else {
+                    setSelectedChatId(null);
+                    setMessages([]);
+                }
+            }
         } catch (error) {
-            console.error('Error creating new chat session:', error);
+            console.error('Error deleting chat session:', error);
+        } finally {
+            setIsModalOpen(false);
+            setChatToDelete(null);
         }
     };
 
     return (
-        <>
             <div className="app-wrapper">
                 <SideBar
                     isSidebarOpen={isSidebarOpen}
@@ -247,13 +314,20 @@ function App() {
                     selectedChatId={selectedChatId}
                     handleChatSelection={handleChatSelection}
                     handleNewChat={handleNewChat}
+                    handleDeleteChat={handleDeleteChat}
+                />
+                <ConfirmationModal 
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onConfirm={confirmDelete}
+                    message="Are you sure you want to delete this chat?"
                 />
 
                 {/* Main Chat Container */}
                 <div className="chat-container-main">
                     {/* Header */}
                     <header className="chat-header">
-                        <h1 className="header-title">MCP workbench</h1>
+                        <h1 className="header-title">Jarvis</h1>
                     </header>
 
                     {/* Messages List */}
@@ -267,6 +341,17 @@ function App() {
                             messages.map((msg, index) => (
                                 <MessageBubble key={index} msg={msg} />
                             ))
+                        )}
+                        {isLoading && (
+                            <div className="typing-row ai">
+                                <div className="typing-bubble">
+                                    <div className="typing">
+                                        <span></span>
+                                        <span></span>
+                                        <span></span>
+                                    </div>
+                                </div>
+                            </div>
                         )}
                         <div ref={messagesEndRef} />
                     </div>
@@ -296,7 +381,6 @@ function App() {
                     </form>
                 </div>
             </div>
-        </>
     );
 }
 

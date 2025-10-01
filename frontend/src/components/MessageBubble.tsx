@@ -140,7 +140,6 @@ const MessageBubble: React.FC<Message> = ({ msg }) => {
                         // Dynamically render React component from code string
                         const DynamicComponent = () => {
                             try {
-                                // Transpile JSX to React.createElement calls
                                 const transpiledCode = Babel.transform(block.code, {
                                     presets: ['react', 'env']
                                 }).code;
@@ -154,7 +153,7 @@ const MessageBubble: React.FC<Message> = ({ msg }) => {
                                 const func = new Function('React', 'exports', transpiledCode.replace(/export default/, 'exports.default ='));
                                 func(React, exports);
                                 const Component = exports.default;
-                                return Component ? <Component /> : null;
+                                return Component ? <div className="dynamic-react-component"><Component /></div> : null;
                             } catch (e) {
                                 console.error("Error rendering React component:", e);
                                 return <p>Error rendering component.</p>;
@@ -173,7 +172,7 @@ const MessageBubble: React.FC<Message> = ({ msg }) => {
                     {'text' in msg.content ? msg.content.text : ''}
                 </ReactMarkdown>
             )}
-            {'blocks' in msg.content && msg.content.blocks.some(block => block.block_type === 'react') && (
+            {'blocks' in msg.content && msg.content.blocks.some(block => block.block_type === 'react' && block.code.includes('new Chart')) && (
                 <canvas ref={chartRef} id="myChart" width="800" height="400"></canvas>
             )}
         </div>

@@ -23,6 +23,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.dynamic-react-component {
+    min-height: 50px; /* Prevent container collapse */
+    width: 100%;
+}
+
 .app-wrapper {
   display: flex;
   width: 100vw;
@@ -107,8 +112,32 @@ body {
   background-color: var(--bg-secondary);
 }
 
+.chat-history-item {
+    position: relative; /* Needed for absolute positioning of the button */
+}
+
 .chat-history-item:hover {
-  background-color: var(--bg-secondary);
+    background-color: var(--accent-hover);
+}
+
+.delete-chat-button {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: none; /* Hidden by default */
+}
+
+.chat-history-item:hover .delete-chat-button {
+    display: block; /* Show on hover */
+}
+
+.delete-chat-button:hover {
+    color: var(--text-primary);
 }
 
 .chat-history-item-text {
@@ -159,6 +188,48 @@ body {
   max-width: 960px;
   width: 100%;
   margin: 0 auto;
+}
+
+/* Typing indicator */
+.typing-row {
+  display: flex;
+}
+
+.typing-bubble {
+  background-color: #171618;
+  color: var(--text-secondary);
+  border-radius: 1.2rem;
+  padding: 0.75rem 1rem;
+  width: fit-content;
+}
+
+.typing {
+  display: inline-block;
+}
+
+.typing span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 4px;
+  background: var(--text-secondary);
+  border-radius: 50%;
+  opacity: 0.3;
+  animation: blink 1.4s infinite both;
+}
+
+.typing span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes blink {
+  0% { opacity: 0.2; }
+  20% { opacity: 1; }
+  100% { opacity: 0.2; }
 }
 
 .empty-chat-message {

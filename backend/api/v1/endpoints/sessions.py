@@ -131,3 +131,18 @@ async def list_user_sessions(user_id: int, db: AsyncSession = Depends(get_db_ses
             ) for s in sessions
         ]
     )
+
+@router.delete("/{session_id}", status_code=204)
+async def delete_session(session_id: str, db: AsyncSession = Depends(get_db_session)):
+    """Deletes a specific chat session and all its messages."""
+    session = await chat_crud.get_chat_session(db, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Chat session not found.")
+        
+    deleted = await chat_crud.delete_chat_session(db, session_id)
+    if not deleted:
+        # This case might occur if the session was deleted by another process
+        # between the check and the delete operation.
+        raise HTTPException(status_code=404, detail="Chat session could not be deleted.")
+    
+    return
