@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { SendHorizonalIcon, LogOut } from 'lucide-react';
+import { SendHorizonalIcon } from 'lucide-react';
 import MessageBubble from './components/MessageBubble';
 import SideBar from './components/SideBar';
 import ConfirmationModal from './components/ConfirmationModal';
@@ -47,7 +47,7 @@ function AuthenticatedApp() {
     const [chatToDelete, setChatToDelete] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
 
     // Fetch chat sessions from the backend to populate the sidebar
     useEffect(() => {
@@ -305,10 +305,12 @@ function AuthenticatedApp() {
             <div className="chat-container-main">
                 {/* Header */}
                 <header className="chat-header">
-                    <h1 className="header-title">Jarvis</h1>
-                    <button onClick={logout} className="logout-button" title="Sign Out">
-                        <LogOut size={20} />
-                    </button>
+                    <div className="header-title">
+                        <span>Universal Agent</span>
+                    </div>
+                    <div className="header-status">
+                        Online
+                    </div>
                 </header>
 
                 {/* Messages List */}
@@ -324,13 +326,11 @@ function AuthenticatedApp() {
                         ))
                     )}
                     {isLoading && (
-                        <div className="typing-row ai">
-                            <div className="typing-bubble">
-                                <div className="typing">
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                </div>
+                        <div className="typing-row">
+                            <div className="typing-indicator">
+                                <div className="typing-dot"></div>
+                                <div className="typing-dot"></div>
+                                <div className="typing-dot"></div>
                             </div>
                         </div>
                     )}
