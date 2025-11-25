@@ -5,6 +5,14 @@ from datetime import datetime
 class UserCreate(BaseModel):
     """Pydantic model for creating a new user."""
     username: str = Field(..., description="The username for the new user.")
+    password: str = Field(..., description="The password for the new user.")
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
 
 class UserSchema(BaseModel):
     """Pydantic model for a user record."""

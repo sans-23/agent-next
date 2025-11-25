@@ -14,7 +14,6 @@ class ReactBlock(BaseModel):
 class LLMOutputBlock(BaseModel):
     blocks: List[Union[TextBlock, ReactBlock]] = Field(..., description="List of content blocks in the LLM output.")
 
-class ChatRequest(BaseModel):
     query: str = Field(..., description="The user's query.")
     chat_id: Optional[str] = Field(None, description="Unique ID for the chat session. A new chat is started if not provided.")
 
@@ -26,7 +25,6 @@ class ChatResponse(BaseModel):
 class ChatMessageResponse(BaseModel):
     """Pydantic model for a single chat message in a response."""
     id: int
-    chat_session_id: str
     role: str
     content: Dict[str, Any]
     created_at: datetime
@@ -34,21 +32,14 @@ class ChatMessageResponse(BaseModel):
     class Config:
         from_attributes = True
 
-class ChatHistoryResponse(BaseModel):
-    chat_id: str
-    messages: List[ChatMessageResponse]
-
 class SessionCreate(BaseModel):
     """Pydantic model for initiating a new chat session with a user and an initial message."""
-    user_id: int = Field(..., description="The ID of the user creating the session.")
-    initial_message: str = Field(..., description="The user's first message in the session.")
-    
+    initial_message: str = Field(..., description="The first message from the user.")
+
 class MessageRequest(BaseModel):
     """Pydantic model for sending a new message to an existing chat session."""
-    session_id: str = Field(..., description="The ID of the chat session to which the message belongs.")
-    user_id: int = Field(..., description="The ID of the user sending the message.")
-    content: str = Field(..., description="The content of the new message.")
-    
+    session_id: str = Field(..., description="The ID of the session to which the message is being sent.")
+    content: str = Field(..., description="The content of the message.")
 class ChatSessionResponse(BaseModel):
     """Pydantic model for a chat session response."""
     id: str

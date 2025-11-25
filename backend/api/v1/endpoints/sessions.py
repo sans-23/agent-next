@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, Request # type: ignore # Import Request
 from sqlalchemy.ext.asyncio import AsyncSession # type: ignore
 from schemas.chat import SessionCreate, ChatSessionResponse, MessageRequest, MessageResponse, SessionListResponse, ChatMessageResponse
+from services.auth import get_current_user
+from models.user import User
 from crud import chat as chat_crud
 from crud import user as user_crud
 from db.session import get_db_session
@@ -27,17 +29,18 @@ def get_llm_instance_dependency(request: Request) -> ChatOpenAI:
 async def create_session(
     session_data: SessionCreate, 
     db: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
     agent_executor: AgentExecutor = Depends(get_agent_executor_dependency),
     llm_instance: ChatOpenAI = Depends(get_llm_instance_dependency)
 ):
     """Starts a new chat session for a user."""
         
-    user = await user_crud.get_user_by_id(db, session_data.user_id)
+    user = await user_crud.get_user_by_id(db, current_user.id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
 
     new_session, _ = await chat_crud.create_chat_session(
-        db, session_data.user_id, session_data.initial_message
+        db, current_user.id, session_data.initial_message
     )
     
     ai_response_content, tool_names_used = await get_agent_response(
@@ -63,6 +66,7 @@ async def create_session(
 async def send_message(
     message_data: MessageRequest, 
     db: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
     agent_executor: AgentExecutor = Depends(get_agent_executor_dependency),
     llm_instance: ChatOpenAI = Depends(get_llm_instance_dependency)
 ):
@@ -72,7 +76,7 @@ async def send_message(
     if not session:
         raise HTTPException(status_code=404, detail="Chat session not found.")
     
-    if session.user_id != message_data.user_id:
+    if session.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Forbidden: User ID does not match session owner.")
         
     history_records = await chat_crud.get_chat_messages(db, message_data.session_id)
@@ -98,10 +102,10 @@ async def send_message(
     )
 
 @router.get("/{session_id}", response_model=ChatSessionResponse)
-async def get_session(session_id: str, db: AsyncSession = Depends(get_db_session)):
+async def get_session(session_id: str, db: AsyncSession = Depends(get_db_session), current_user: User = Depends(get_current_user)):
     """Retrieves a specific chat session and all its messages."""
     session = await chat_crud.get_chat_session(db, session_id)
-    if not session:
+    if not session or session.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Chat session not found.")
         
     messages = await chat_crud.get_chat_messages(db, session_id)
@@ -115,10 +119,10 @@ async def get_session(session_id: str, db: AsyncSession = Depends(get_db_session
         messages=[ChatMessageResponse.from_orm(m) for m in messages]
     )
 
-@router.get("/user/{user_id}", response_model=SessionListResponse)
-async def list_user_sessions(user_id: int, db: AsyncSession = Depends(get_db_session)):
+@router.get("/user/", response_model=SessionListResponse)
+async def list_user_sessions(db: AsyncSession = Depends(get_db_session), current_user: User = Depends(get_current_user)):
     """Lists all chat sessions for a specific user."""
-    sessions = await chat_crud.get_user_sessions(db, user_id)
+    sessions = await chat_crud.get_user_sessions(db, current_user.id)
     return SessionListResponse(
         sessions=[
             ChatSessionResponse(
@@ -133,10 +137,10 @@ async def list_user_sessions(user_id: int, db: AsyncSession = Depends(get_db_ses
     )
 
 @router.delete("/{session_id}", status_code=204)
-async def delete_session(session_id: str, db: AsyncSession = Depends(get_db_session)):
+async def delete_session(session_id: str, db: AsyncSession = Depends(get_db_session), current_user: User = Depends(get_current_user)):
     """Deletes a specific chat session and all its messages."""
     session = await chat_crud.get_chat_session(db, session_id)
-    if not session:
+    if not session or session.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Chat session not found.")
         
     deleted = await chat_crud.delete_chat_session(db, session_id)

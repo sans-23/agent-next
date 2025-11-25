@@ -15,6 +15,9 @@ import logging
 async def lifespan(app: FastAPI):
     """Initializes LLM, tools, and the agent executor when the application starts."""
     async with engine.begin() as conn:
+        # NOTE: This is for development purposes. It drops and recreates tables on startup.
+        # In a production environment, you should use a migration tool like Alembic.
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
     try:
