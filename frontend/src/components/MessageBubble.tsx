@@ -127,7 +127,7 @@ const MessageBubble: React.FC<Message> = ({ msg }) => {
       </div>
       <div className="message-content-wrapper">
         <div className="message-sender">
-          {msg.role === 'ai' ? 'Universal Agent' : 'You'}
+          {msg.role === 'ai' ? 'Jarvis' : 'You'}
         </div>
         <div className={`message-bubble ${msg.role}`}>
           {'blocks' in msg.content ? (

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { SendHorizonalIcon } from 'lucide-react';
+import { SendHorizonalIcon, LogOut } from 'lucide-react';
 import MessageBubble from './components/MessageBubble';
 import SideBar from './components/SideBar';
 import ConfirmationModal from './components/ConfirmationModal';
@@ -47,7 +47,7 @@ function AuthenticatedApp() {
     const [chatToDelete, setChatToDelete] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
 
     // Fetch chat sessions from the backend to populate the sidebar
     useEffect(() => {
@@ -55,7 +55,7 @@ function AuthenticatedApp() {
             if (!user?.id) return;
 
             try {
-                const response = await api.get(`/sessions/user/${user.id}`);
+                const response = await api.get(`/sessions/user/`);
                 const sessions: ChatSession[] = response.data.sessions;
 
                 console.log('Fetched sessions:', sessions);
@@ -306,11 +306,11 @@ function AuthenticatedApp() {
                 {/* Header */}
                 <header className="chat-header">
                     <div className="header-title">
-                        <span>Universal Agent</span>
+                        <span>Jarvis</span>
                     </div>
-                    <div className="header-status">
-                        Online
-                    </div>
+                    <button onClick={logout} className="logout-button" title="Sign Out">
+                        <LogOut size={20} />
+                    </button>
                 </header>
 
                 {/* Messages List */}

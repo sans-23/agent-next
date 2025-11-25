@@ -1,5 +1,5 @@
 import React from 'react';
-import { MenuIcon, MessageSquare, Plus, Trash2, LogOut, User } from 'lucide-react';
+import { MenuIcon, MessageSquare, Plus, Trash2, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface TextBlock { block_type: "text"; text: string; }
@@ -36,7 +36,7 @@ interface SideBarProps {
 }
 
 const SideBar: React.FC<SideBarProps> = ({ isSidebarOpen, setIsSidebarOpen, chatHistory, selectedChatId, handleChatSelection, handleNewChat, handleDeleteChat }) => {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
 
     const getChatTitle = (chatId: string) => {
         const session = chatHistory[chatId];
@@ -50,13 +50,12 @@ const SideBar: React.FC<SideBarProps> = ({ isSidebarOpen, setIsSidebarOpen, chat
     return (
         <aside className={`sidebar ${isSidebarOpen ? '' : 'closed'}`}>
             <div className="sidebar-header">
-                <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px' }}>
                     <MenuIcon size={20} />
                 </button>
                 {isSidebarOpen && (
-                    <button className="new-chat-button" onClick={handleNewChat}>
-                        <Plus size={16} />
-                        <span>New Chat</span>
+                    <button className="new-chat-button" onClick={handleNewChat} title="New Chat">
+                        <Plus size={18} />
                     </button>
                 )}
             </div>
@@ -91,23 +90,12 @@ const SideBar: React.FC<SideBarProps> = ({ isSidebarOpen, setIsSidebarOpen, chat
             </div>
 
             <div className="sidebar-footer">
-                {isSidebarOpen ? (
-                    <>
-                        <div className="user-profile">
-                            <div className="avatar">
-                                {user?.username?.charAt(0).toUpperCase() || <User size={16} />}
-                            </div>
-                            <span className="username">{user?.username || 'Guest'}</span>
-                        </div>
-                        <button onClick={logout} className="logout-button" title="Sign Out">
-                            <LogOut size={18} />
-                        </button>
-                    </>
-                ) : (
-                    <button onClick={logout} className="logout-button" title="Sign Out">
-                        <LogOut size={18} />
-                    </button>
-                )}
+                <div className="user-profile">
+                    <div className="avatar">
+                        {user?.username?.charAt(0).toUpperCase() || <User size={16} />}
+                    </div>
+                    {isSidebarOpen && <span className="username">{user?.username || 'Guest'}</span>}
+                </div>
             </div>
         </aside>
     );

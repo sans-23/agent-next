@@ -27,7 +27,6 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border-subtle);
   height: 60px;
 }
 
@@ -39,33 +38,22 @@
 .new-chat-button {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background-color: var(--accent-primary);
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  width: 100%;
   justify-content: center;
-  transition: background-color 0.2s;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 6px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 32px;
+  height: 32px;
 }
 
 .new-chat-button:hover {
-  background-color: var(--accent-hover);
-}
-
-.sidebar.closed .new-chat-button span {
-  display: none;
-}
-
-.sidebar.closed .new-chat-button {
-  padding: 8px;
-  width: auto;
-  background-color: transparent;
-  color: var(--accent-primary);
+  background-color: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border-color: var(--text-tertiary);
 }
 
 .chat-history-list {
@@ -130,10 +118,16 @@
 
 .sidebar-footer {
   padding: 16px;
-  border-top: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   gap: 12px;
+  height: 64px;
+  /* Fixed height for consistency */
+}
+
+.sidebar.closed .sidebar-footer {
+  justify-content: center;
+  padding: 0;
 }
 
 .user-profile {
@@ -142,6 +136,13 @@
   gap: 10px;
   flex: 1;
   overflow: hidden;
+  transition: all 0.2s;
+}
+
+.sidebar.closed .user-profile {
+  flex: 0;
+  justify-content: center;
+  width: 100%;
 }
 
 .avatar {
@@ -259,6 +260,10 @@
   gap: 16px;
 }
 
+.message-row.user {
+  flex-direction: row-reverse;
+}
+
 .message-avatar {
   width: 32px;
   height: 32px;
@@ -268,6 +273,8 @@
   justify-content: center;
   flex-shrink: 0;
   font-size: 0.875rem;
+  margin-top: 4px;
+  /* Align with top of text */
 }
 
 .message-avatar.ai {
@@ -283,13 +290,18 @@
 .message-content-wrapper {
   flex: 1;
   min-width: 0;
-  /* Prevent overflow */
+  display: flex;
+  flex-direction: column;
+}
+
+.message-row.user .message-content-wrapper {
+  align-items: flex-end;
 }
 
 .message-sender {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-tertiary);
   margin-bottom: 4px;
 }
 
@@ -297,15 +309,32 @@
   font-size: 0.9375rem;
   line-height: 1.6;
   color: var(--text-secondary);
+  max-width: 85%;
+  /* Don't span full width */
+  padding: 8px 12px;
+  /* Add padding for background */
+  border-radius: var(--radius-md);
+}
+
+.message-bubble.ai {
+  /* AI messages can be wider and transparent/minimal */
+  max-width: 100%;
+  padding: 0;
+  /* Keep AI messages clean/flat if preferred, or add padding if we want a background */
 }
 
 .message-bubble.user {
   color: var(--text-primary);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-top-right-radius: 2px;
+  /* Subtle visual cue */
 }
 
 /* Markdown Styling */
 .message-bubble p {
   margin-bottom: 12px;
+  margin-top: 0;
 }
 
 .message-bubble p:last-child {
