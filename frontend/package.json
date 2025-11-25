@@ -12,6 +12,7 @@
   "dependencies": {
     "@babel/standalone": "^7.28.4",
     "@types/chart.js": "^2.9.41",
+    "axios": "^1.13.2",
     "chart.js": "^4.5.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.544.0",

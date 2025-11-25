@@ -6,7 +6,7 @@ load_dotenv()
 # --- LLM Configuration ---
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL")
-LLM_MODEL_NAME = "x-ai/grok-4-fast:free"
+LLM_MODEL_NAME = "x-ai/grok-4.1-fast:free"
 
 # --- MCP Server Configuration ---
 MCP_SERVERS = {

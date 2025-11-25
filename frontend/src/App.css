@@ -24,8 +24,9 @@ body {
 }
 
 .dynamic-react-component {
-    min-height: 50px; /* Prevent container collapse */
-    width: 100%;
+  min-height: 50px;
+  /* Prevent container collapse */
+  width: 100%;
 }
 
 .app-wrapper {
@@ -113,31 +114,34 @@ body {
 }
 
 .chat-history-item {
-    position: relative; /* Needed for absolute positioning of the button */
+  position: relative;
+  /* Needed for absolute positioning of the button */
 }
 
 .chat-history-item:hover {
-    background-color: var(--accent-hover);
+  background-color: var(--accent-hover);
 }
 
 .delete-chat-button {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    display: none; /* Hidden by default */
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: none;
+  /* Hidden by default */
 }
 
 .chat-history-item:hover .delete-chat-button {
-    display: block; /* Show on hover */
+  display: block;
+  /* Show on hover */
 }
 
 .delete-chat-button:hover {
-    color: var(--text-primary);
+  color: var(--text-primary);
 }
 
 .chat-history-item-text {
@@ -227,9 +231,17 @@ body {
 }
 
 @keyframes blink {
-  0% { opacity: 0.2; }
-  20% { opacity: 1; }
-  100% { opacity: 0.2; }
+  0% {
+    opacity: 0.2;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.2;
+  }
 }
 
 .empty-chat-message {
@@ -275,7 +287,8 @@ body {
   border-radius: 1.2rem;
   max-width: 70%;
   word-wrap: break-word;
-  white-space: pre-wrap; /* Ensures newlines are respected */
+  white-space: pre-wrap;
+  /* Ensures newlines are respected */
   color: var(--text-primary);
 }
 
@@ -483,10 +496,30 @@ body {
 
 @media (max-width: 768px) {
   .sidebar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      height: 100vh;
-      z-index: 10;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 10;
   }
+}
+
+.logout-button {
+  position: absolute;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logout-button:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
 }
