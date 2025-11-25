@@ -50,12 +50,12 @@ async def create_session(
     if not agent_executor:
          raise HTTPException(status_code=500, detail="Failed to initialize AI agent.")
 
-    ai_response_content, tool_names_used = await get_agent_response(
+    ai_response_content, tool_names_used, tool_calls = await get_agent_response(
         agent_executor, session_data.initial_message, [], llm_instance
     )
     
     await chat_crud.add_ai_message_to_session(
-        db, new_session.id, ai_response_content, tool_names_used
+        db, new_session.id, ai_response_content, tool_names_used, tool_calls
     )
     
     messages = await chat_crud.get_chat_messages(db, new_session.id)
@@ -94,27 +94,24 @@ async def send_message(
     )
     
     # Get user-specific agent
-    # We need the full user object with mcp_config, current_user from Depends might be partial if not joined
-    # But typically get_current_user returns the ORM object. Let's ensure we have what we need.
-    # The AgentManager needs the mcp_config.
-    
     agent_executor = await agent_manager.get_agent(current_user)
     if not agent_executor:
          raise HTTPException(status_code=500, detail="Failed to initialize AI agent.")
     
-    ai_response_content, tool_names_used = await get_agent_response(
+    ai_response_content, tool_names_used, tool_calls = await get_agent_response(
         agent_executor, message_data.content, lc_history, llm_instance 
     )
     
     ai_message = await chat_crud.add_ai_message_to_session(
-        db, message_data.session_id, ai_response_content, tool_names_used
+        db, message_data.session_id, ai_response_content, tool_names_used, tool_calls
     )
     
     return MessageResponse(
         session_id=message_data.session_id,
         user_message=ChatMessageResponse.from_orm(user_message),
         ai_response=ChatMessageResponse.from_orm(ai_message),
-        tool_names_used=tool_names_used
+        tool_names_used=tool_names_used,
+        tool_calls=tool_calls
     )
 
 @router.get("/{session_id}", response_model=ChatSessionResponse)

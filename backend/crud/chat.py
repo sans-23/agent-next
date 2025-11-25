@@ -25,13 +25,14 @@ async def create_chat_session(db: AsyncSession, user_id: int, initial_message: s
     
     return new_session, user_message
 
-async def add_ai_message_to_session(db: AsyncSession, session_id: str, ai_response_content: LLMOutputBlock, tools_used: List[str] = None):
+async def add_ai_message_to_session(db: AsyncSession, session_id: str, ai_response_content: LLMOutputBlock, tools_used: List[str] = None, tool_calls: List[dict] = None):
     """Adds an AI message to a session, optionally including tools used."""
     ai_message = ChatMessage(
         chat_session_id=session_id,
         role="ai",
         content=ai_response_content.model_dump(),
-        tool_used=", ".join(tools_used) if tools_used else None
+        tool_used=", ".join(tools_used) if tools_used else None,
+        tool_calls=tool_calls
     )
     db.add(ai_message)
     await db.commit()

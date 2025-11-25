@@ -22,11 +22,17 @@ class ChatResponse(BaseModel):
     chat_id: str = Field(..., description="The ID of the chat session.")
     tool_used: Optional[str] = Field(None, description="The tool used to generate the response, if any.")
 
+class ToolCall(BaseModel):
+    name: str
+    input: Dict[str, Any]
+    output: Optional[str] = None
+
 class ChatMessageResponse(BaseModel):
     """Pydantic model for a single chat message in a response."""
     id: int
     role: str
     content: Dict[str, Any]
+    tool_calls: Optional[List[ToolCall]] = None
     created_at: datetime
 
     class Config:
@@ -40,6 +46,7 @@ class MessageRequest(BaseModel):
     """Pydantic model for sending a new message to an existing chat session."""
     session_id: str = Field(..., description="The ID of the session to which the message is being sent.")
     content: str = Field(..., description="The content of the message.")
+
 class ChatSessionResponse(BaseModel):
     """Pydantic model for a chat session response."""
     id: str
@@ -58,6 +65,7 @@ class MessageResponse(BaseModel):
     user_message: ChatMessageResponse
     ai_response: ChatMessageResponse
     tool_names_used: List[str] = Field(default=[], description="List of tools utilized by the agent.")
+    tool_calls: List[ToolCall] = Field(default=[], description="Detailed list of tool calls.")
 
 class SessionListResponse(BaseModel):
     """Pydantic model for listing multiple chat sessions."""

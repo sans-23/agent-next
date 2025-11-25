@@ -23,6 +23,7 @@ function AuthenticatedApp() {
         role: 'user' | 'ai';
         content: ApiMessageContent;
         created_at: string;
+        tool_calls?: { name: string; input: any; output?: string; }[];
     };
 
     type ChatSession = {

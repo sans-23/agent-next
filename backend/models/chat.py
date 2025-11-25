@@ -19,5 +19,6 @@ class ChatMessage(Base):
     role = Column(String)  # 'user' or 'ai'
     is_summary = Column(Integer, default=0)  # 1 if summary message, else 0
     tool_used = Column(String, nullable=True)  # Name of the tool used, if any
+    tool_calls = Column(JSON, nullable=True) # Store detailed tool calls (name, input, output)
     content = Column(JSON) # Store message content as JSON
     created_at = Column(DateTime, server_default=func.now())

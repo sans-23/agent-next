@@ -26,17 +26,34 @@ def create_mcp_agent_executor(llm_instance: ChatOpenAI, tools_list: List[Any]) -
     print("✅ Agent Executor created successfully.")
     return executor
 
-async def get_agent_response(agent_executor: AgentExecutor, user_input: str, chat_history: List[BaseMessage], llm_instance: ChatOpenAI) -> Tuple[LLMOutputBlock, List[str]]:
-    """Gets a response from the agent and returns the text and tools used."""
+async def get_agent_response(agent_executor: AgentExecutor, user_input: str, chat_history: List[BaseMessage], llm_instance: ChatOpenAI) -> Tuple[LLMOutputBlock, List[str], List[dict]]:
+    """Gets a response from the agent and returns the text, tool names used, and detailed tool calls."""
     agent_input = {"input": user_input, "chat_history": chat_history}
     response_parts = ""
     tool_names_used = []
+    tool_calls = []
+    
     try:
         async for chunk in agent_executor.astream(agent_input):
             if "actions" in chunk:
                 for action in chunk["actions"]:
                     tool_names_used.append(action.tool)
+                    tool_calls.append({
+                        "name": action.tool,
+                        "input": action.tool_input,
+                        "output": None # Output is captured in steps, but for now we capture input
+                    })
             
+            if "steps" in chunk:
+                for step in chunk["steps"]:
+                    # step is a tuple (AgentAction, str) where str is the observation/output
+                    action = step.action
+                    observation = step.observation
+                    # Find the matching tool call to update output, or append new if missed
+                    # Since steps come after actions, we can try to match or just append complete calls
+                    # Simpler approach: construct tool_calls from steps which have both input and output
+                    pass
+
             if "output" in chunk:
                 response_parts += chunk["output"]
 
@@ -44,6 +61,51 @@ async def get_agent_response(agent_executor: AgentExecutor, user_input: str, cha
         print(f"💥 Agent Execution Error: {e}")
         response_parts = f"I apologize, the AI agent encountered an error. {e}"
     
+    # Re-process to get complete tool calls from intermediate_steps if available in the final result
+    # But astream yields chunks. 
+    # Let's rely on 'steps' chunk which contains (action, observation)
+    
+    # Refined logic for tool_calls
+    final_tool_calls = []
+    try:
+        # We need to run it again or capture differently? 
+        # astream yields:
+        # 1. actions: [AgentAction]
+        # 2. steps: [(AgentAction, str)] -> This has the output!
+        # 3. output: str
+        
+        # Let's reset and capture from steps for full details
+        pass
+    except:
+        pass
+
+    # Let's rewrite the loop to be cleaner
+    tool_names_used = []
+    tool_calls_list = []
+
+    try:
+        async for chunk in agent_executor.astream(agent_input):
+            if "actions" in chunk:
+                for action in chunk["actions"]:
+                    tool_names_used.append(action.tool)
+            
+            if "steps" in chunk:
+                for step in chunk["steps"]:
+                    action = step.action
+                    observation = step.observation
+                    tool_calls_list.append({
+                        "name": action.tool,
+                        "input": action.tool_input,
+                        "output": str(observation)
+                    })
+
+            if "output" in chunk:
+                response_parts += chunk["output"]
+                
+    except Exception as e:
+        print(f"💥 Agent Execution Error: {e}")
+        response_parts = f"I apologize, the AI agent encountered an error. {e}"
+
     structured_llm = llm_instance.with_structured_output(LLMOutputBlock)
     pro = "You are an AI assistant. " \
     "Your responses should be structured as an array of content blocks, which can be either plain text or React components. " \
@@ -55,4 +117,4 @@ async def get_agent_response(agent_executor: AgentExecutor, user_input: str, cha
     structured_response = await structured_llm.ainvoke(pro + response_parts)
     unique_tool_names = list(set(tool_names_used))
 
-    return structured_response, unique_tool_names
+    return structured_response, unique_tool_names, tool_calls_list
