@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         # NOTE: This is for development purposes. It drops and recreates tables on startup.
         # In a production environment, you should use a migration tool like Alembic.
-        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.drop_all) # Uncommented to apply schema change
         await conn.run_sync(Base.metadata.create_all)
 
     try:
@@ -30,15 +30,17 @@ async def lifespan(app: FastAPI):
         logging.error(f"❌ Error initializing LLM: {e}")
         llm_instance = None
 
-    tools_list = await setup_tools(llm_instance)
+    # tools_list = await setup_tools(llm_instance) # Tools are now setup per-user in AgentManager
 
     if llm_instance:
-        app.state.llm_instance = llm_instance  # Store the LLM instance in the app state
-        app.state.agent_executor = create_mcp_agent_executor(llm_instance, tools_list)
-        if app.state.agent_executor is None:
-            print("❌ Agent Executor was not created.")
+        app.state.llm_instance = llm_instance
+        # Initialize AgentManager with LLM
+        from services.agent_manager import agent_manager
+        agent_manager.set_llm(llm_instance)
+        app.state.agent_manager = agent_manager
+        print("✅ AgentManager initialized.")
     else:
-        print("❌ Agent not initialized due to LLM initialization failure.")
+        print("❌ AgentManager not initialized due to LLM initialization failure.")
     yield
 
 app = FastAPI(
@@ -67,4 +69,4 @@ app.include_router(api_router, prefix="/api/v1")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

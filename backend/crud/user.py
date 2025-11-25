@@ -19,3 +19,12 @@ async def create_user(db: AsyncSession, user: UserCreate):
     await db.commit()
     await db.refresh(db_user)
     return db_user
+
+async def update_user_mcp_config(db: AsyncSession, user_id: int, mcp_config: dict):
+    result = await db.execute(select(User).filter(User.id == user_id))
+    user = result.scalars().first()
+    if user:
+        user.mcp_config = mcp_config
+        await db.commit()
+        await db.refresh(user)
+    return user

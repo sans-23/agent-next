@@ -4,6 +4,7 @@ import React, { createContext, useState, useEffect, useContext, type ReactNode }
 interface User {
     username: string;
     id?: number;
+    mcp_config?: any;
 }
 
 interface AuthContextType {
@@ -11,6 +12,7 @@ interface AuthContextType {
     token: string | null;
     login: (token: string, user: User) => void;
     logout: () => void;
+    updateUser: (updates: Partial<User>) => void;
     isAuthenticated: boolean;
 }
 
@@ -46,10 +48,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(null);
     };
 
+    const updateUser = (updates: Partial<User>) => {
+        if (user) {
+            const updatedUser = { ...user, ...updates };
+            setUser(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+        }
+    };
+
     const isAuthenticated = !!token;
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated }}>
+        <AuthContext.Provider value={{ user, token, login, logout, updateUser, isAuthenticated }}>
             {children}
         </AuthContext.Provider>
     );

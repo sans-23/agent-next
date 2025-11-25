@@ -13,11 +13,13 @@ from langchain_openai import ChatOpenAI
 
 router = APIRouter()
 
-def get_agent_executor_dependency(request: Request) -> AgentExecutor:
-    executor = request.app.state.agent_executor
-    if executor is None:
-        raise HTTPException(status_code=503, detail="Agent is not initialized.")
-    return executor
+from services.agent_manager import AgentManager
+
+def get_agent_manager_dependency(request: Request) -> AgentManager:
+    manager = request.app.state.agent_manager
+    if manager is None:
+        raise HTTPException(status_code=503, detail="AgentManager is not initialized.")
+    return manager
 
 def get_llm_instance_dependency(request: Request) -> ChatOpenAI:
     llm_instance = request.app.state.llm_instance
@@ -30,7 +32,7 @@ async def create_session(
     session_data: SessionCreate, 
     db: AsyncSession = Depends(get_db_session),
     current_user: User = Depends(get_current_user),
-    agent_executor: AgentExecutor = Depends(get_agent_executor_dependency),
+    agent_manager: AgentManager = Depends(get_agent_manager_dependency),
     llm_instance: ChatOpenAI = Depends(get_llm_instance_dependency)
 ):
     """Starts a new chat session for a user."""
@@ -43,6 +45,11 @@ async def create_session(
         db, current_user.id, session_data.initial_message
     )
     
+    # Get user-specific agent
+    agent_executor = await agent_manager.get_agent(user)
+    if not agent_executor:
+         raise HTTPException(status_code=500, detail="Failed to initialize AI agent.")
+
     ai_response_content, tool_names_used = await get_agent_response(
         agent_executor, session_data.initial_message, [], llm_instance
     )
@@ -67,7 +74,7 @@ async def send_message(
     message_data: MessageRequest, 
     db: AsyncSession = Depends(get_db_session),
     current_user: User = Depends(get_current_user),
-    agent_executor: AgentExecutor = Depends(get_agent_executor_dependency),
+    agent_manager: AgentManager = Depends(get_agent_manager_dependency),
     llm_instance: ChatOpenAI = Depends(get_llm_instance_dependency)
 ):
     """Sends a new message to an existing chat session."""
@@ -86,8 +93,17 @@ async def send_message(
         db, message_data.session_id, message_data.content
     )
     
+    # Get user-specific agent
+    # We need the full user object with mcp_config, current_user from Depends might be partial if not joined
+    # But typically get_current_user returns the ORM object. Let's ensure we have what we need.
+    # The AgentManager needs the mcp_config.
+    
+    agent_executor = await agent_manager.get_agent(current_user)
+    if not agent_executor:
+         raise HTTPException(status_code=500, detail="Failed to initialize AI agent.")
+    
     ai_response_content, tool_names_used = await get_agent_response(
-        agent_executor, message_data.content, lc_history, llm_instance # Pass llm_instance here
+        agent_executor, message_data.content, lc_history, llm_instance 
     )
     
     ai_message = await chat_crud.add_ai_message_to_session(

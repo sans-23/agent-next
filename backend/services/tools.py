@@ -7,19 +7,31 @@ import json
 import os
 import aiofiles # type: ignore
 
-async def setup_tools(llm: Any) -> List[Any]:
+async def setup_tools(llm: Any, mcp_config: dict = None) -> List[Any]:
     """Sets up and returns a list of tools, including MCP-based ones and RAG tool."""
     mcp_tools = []
+    
+    # Use provided config or fall back to global default (though global might be deprecated in per-user model)
+    server_config = mcp_config if mcp_config else config.MCP_SERVERS
+
     try:
-        if not all(server.get('headers') and server['headers'].get('Authorization') for server in config.MCP_SERVERS.values()) or not config.MCP_SERVERS["github"]["headers"]["Authorization"]:
-            print("❌ WARNING: MCP Authorization headers missing or invalid. Skipping MCP tool setup.")
-        else:
-            client = MultiServerMCPClient(config.MCP_SERVERS)
+        # Check if config is valid (has headers/auth)
+        # We iterate over the config to check for validity
+        valid_config = True
+        for server_name, server_details in server_config.items():
+             if not server_details.get('headers') or not server_details['headers'].get('Authorization') or "YOUR_GITHUB_TOKEN_HERE" in server_details['headers']['Authorization']:
+                 print(f"⚠️ MCP Server '{server_name}' missing valid Authorization. Skipping.")
+                 valid_config = False
+        
+        if valid_config and server_config:
+            client = MultiServerMCPClient(server_config)
             mcp_tools = await client.get_tools()
             print(f"✅ MCP tools fetched successfully. Found {len(mcp_tools)} tools.")
+        else:
+             print("ℹ️ No valid MCP servers configured or auth missing.")
+
     except Exception as e:
-        auth_hint = " (check GITHUB_COPILOT_TOKEN and Bearer prefix)" if isinstance(e, Exception) else ""
-        print(f"❌ Error setting up MCP tools: {e}{auth_hint}")
+        print(f"❌ Error setting up MCP tools: {e}")
 
     # Create one RAG tool per source (namespace) so the agent can pick the right one
     sources = []

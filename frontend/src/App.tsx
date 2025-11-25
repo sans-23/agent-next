@@ -3,6 +3,7 @@ import { SendHorizonalIcon, LogOut } from 'lucide-react';
 import MessageBubble from './components/MessageBubble';
 import SideBar from './components/SideBar';
 import ConfirmationModal from './components/ConfirmationModal';
+import SettingsModal from './components/SettingsModal';
 import Login from './components/Login';
 import Register from './components/Register';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -44,10 +45,11 @@ function AuthenticatedApp() {
     const [isLoading, setIsLoading] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [chatToDelete, setChatToDelete] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const { user, logout } = useAuth();
+    const { user, logout, updateUser } = useAuth();
 
     // Fetch chat sessions from the backend to populate the sidebar
     useEffect(() => {
@@ -283,6 +285,19 @@ function AuthenticatedApp() {
         }
     };
 
+    const handleSaveSettings = async (newConfig: any) => {
+        try {
+            const response = await api.put('/users/me/mcp-config', newConfig);
+            // Update local user state so the modal shows the new config next time
+            updateUser({ mcp_config: newConfig });
+            console.log('Settings saved:', response.data);
+            alert('Settings saved successfully! The agent will use the new configuration for the next message.');
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            throw error; // Re-throw for the modal to handle
+        }
+    };
+
     return (
         <div className="app-wrapper">
             <SideBar
@@ -293,6 +308,7 @@ function AuthenticatedApp() {
                 handleChatSelection={handleChatSelection}
                 handleNewChat={handleNewChat}
                 handleDeleteChat={handleDeleteChat}
+                onOpenSettings={() => setIsSettingsOpen(true)}
             />
             <ConfirmationModal
                 isOpen={isModalOpen}
@@ -301,15 +317,34 @@ function AuthenticatedApp() {
                 message="Are you sure you want to delete this chat?"
             />
 
+            <SettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                config={user?.mcp_config}
+                onSave={handleSaveSettings}
+            />
+
             {/* Main Chat Container */}
             <div className="chat-container-main">
                 {/* Header */}
                 <header className="chat-header">
-                    <div className="header-title">
-                        <span>Jarvis</span>
+                    <div className="header-left">
+                        <div className="header-breadcrumb">
+                            <span className="breadcrumb-root">Jarvis</span>
+                            <span className="breadcrumb-separator">/</span>
+                            <span className="breadcrumb-current">
+                                {selectedChatId && chatHistory[selectedChatId]?.title
+                                    ? chatHistory[selectedChatId].title
+                                    : 'New Chat'}
+                            </span>
+                        </div>
+                        <div className="model-badge">
+                            <span className="model-dot"></span>
+                            MCP Agent
+                        </div>
                     </div>
                     <button onClick={logout} className="logout-button" title="Sign Out">
-                        <LogOut size={20} />
+                        <LogOut size={18} />
                     </button>
                 </header>
 

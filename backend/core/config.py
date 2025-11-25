@@ -34,3 +34,17 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 # --- Environment/Logging ---
 ENV = os.getenv("ENV", "development")
 SQLALCHEMY_ECHO = os.getenv("SQLALCHEMY_ECHO", "false").lower() == "true"
+
+# --- Agent Configuration ---
+AGENT_CACHE_SIZE = int(os.getenv("AGENT_CACHE_SIZE", "100")) # Default to 100 users
+
+# --- Default User MCP Config ---
+DEFAULT_MCP_CONFIG = {
+    "github": {
+        "transport": "streamable_http",
+        "url": "https://api.githubcopilot.com/mcp/",
+        "headers": {
+            "Authorization": "Bearer <YOUR_GITHUB_TOKEN_HERE>"
+        }
+    }
+}

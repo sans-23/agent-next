@@ -1,5 +1,5 @@
 import React from 'react';
-import { MenuIcon, MessageSquare, Plus, Trash2, User } from 'lucide-react';
+import { MenuIcon, MessageSquare, Plus, Trash2, User, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface TextBlock { block_type: "text"; text: string; }
@@ -33,9 +33,10 @@ interface SideBarProps {
     handleChatSelection: (chatId: string) => void;
     handleNewChat: () => void;
     handleDeleteChat: (chatId: string) => void;
+    onOpenSettings: () => void;
 }
 
-const SideBar: React.FC<SideBarProps> = ({ isSidebarOpen, setIsSidebarOpen, chatHistory, selectedChatId, handleChatSelection, handleNewChat, handleDeleteChat }) => {
+const SideBar: React.FC<SideBarProps> = ({ isSidebarOpen, setIsSidebarOpen, chatHistory, selectedChatId, handleChatSelection, handleNewChat, handleDeleteChat, onOpenSettings }) => {
     const { user } = useAuth();
 
     const getChatTitle = (chatId: string) => {
@@ -96,6 +97,11 @@ const SideBar: React.FC<SideBarProps> = ({ isSidebarOpen, setIsSidebarOpen, chat
                     </div>
                     {isSidebarOpen && <span className="username">{user?.username || 'Guest'}</span>}
                 </div>
+                {isSidebarOpen && (
+                    <button onClick={onOpenSettings} className="settings-button" title="Settings">
+                        <Settings size={18} />
+                    </button>
+                )}
             </div>
         </aside>
     );
