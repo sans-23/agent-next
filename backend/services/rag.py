@@ -30,16 +30,26 @@ Answer the question based on the above context: {question}
 
 def _get_chroma_client(collection_name: Optional[str] = None) -> Chroma:
     # If a collection name is provided, use it to namespace documents
-    kwargs: Dict[str, Any] = {
-        "host": config.CHROMA_HOST,
-        "port": int(config.CHROMA_PORT) if isinstance(config.CHROMA_PORT, str) else config.CHROMA_PORT,
-        "embedding_function": get_embedding_function(),
-    }
+    if config.ENV == "local" and config.CHROMA_PERSIST_DIRECTORY:
+        kwargs: Dict[str, Any] = {
+            "persist_directory": config.CHROMA_PERSIST_DIRECTORY,
+            "embedding_function": get_embedding_function(),
+        }
+    else:
+        kwargs: Dict[str, Any] = {
+            "host": config.CHROMA_HOST,
+            "port": int(config.CHROMA_PORT) if isinstance(config.CHROMA_PORT, str) else config.CHROMA_PORT,
+            "embedding_function": get_embedding_function(),
+        }
+    
     if collection_name:
         kwargs["collection_name"] = collection_name
     return Chroma(**kwargs) # type: ignore[arg-type]
 
 def _is_chroma_available() -> bool:
+    if config.ENV == "local":
+        return True
+        
     host = config.CHROMA_HOST
     port = int(config.CHROMA_PORT) if isinstance(config.CHROMA_PORT, str) else config.CHROMA_PORT
     # Try a low-level TCP connect which is robust across versions

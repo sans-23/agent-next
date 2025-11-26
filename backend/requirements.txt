@@ -14,3 +14,4 @@ sentence-transformers
 unstructured
 beautifulsoup4
 httpx
+aiosqlite

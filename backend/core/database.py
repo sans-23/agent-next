@@ -8,7 +8,9 @@ Base = declarative_base()
 
 # --- Database Engine ---
 # Create the asynchronous engine
-engine = create_async_engine(DATABASE_URL, echo=SQLALCHEMY_ECHO)
+# Create the asynchronous engine
+connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+engine = create_async_engine(DATABASE_URL, echo=SQLALCHEMY_ECHO, connect_args=connect_args)
 
 # --- Session Maker ---
 # Create a session maker to manage sessions

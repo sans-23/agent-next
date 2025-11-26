@@ -3,6 +3,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# --- Environment/Logging ---
+ENV = os.getenv("ENV", "development")
+
 # --- LLM Configuration ---
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL")
@@ -20,19 +23,22 @@ MCP_SERVERS = {
 }
 
 # --- Database Configuration ---
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+if ENV == "local":
+    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./local.db")
+else:
+    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 
 # --- ChromaDB Configuration ---
 CHROMA_HOST = os.getenv("CHROMA_HOST", "localhost")
 CHROMA_PORT = os.getenv("CHROMA_PORT", "8001")
+CHROMA_PERSIST_DIRECTORY = "./chroma_db" if ENV == "local" else None
 
 # --- Security/Authentication --- 
 SECRET_KEY = os.getenv("SECRET_KEY", "a_very_secret_key_that_should_be_changed")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 3000
 
-# --- Environment/Logging ---
-ENV = os.getenv("ENV", "development")
+
 SQLALCHEMY_ECHO = os.getenv("SQLALCHEMY_ECHO", "false").lower() == "true"
 
 # --- Agent Configuration ---
