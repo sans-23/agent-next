@@ -1,39 +1,29 @@
-from fastapi import APIRouter, HTTPException, Depends, Request # type: ignore # Import Request
-from sqlalchemy.ext.asyncio import AsyncSession # type: ignore
+from fastapi import APIRouter, HTTPException, Depends, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 from core.schemas import SessionCreate, ChatSessionResponse, MessageRequest, MessageResponse, SessionListResponse, ChatMessageResponse
-from services.auth import get_current_user
 from models.user import User
-from crud import chat as chat_crud
-from crud import user as user_crud
-from core.database import get_db_session
-from services.agent import get_agent_response # Removed _agent_executor import
+from services import chat as chat_crud
+from services import user as user_crud
+from api import deps
 from langchain.agents import AgentExecutor # type: ignore
 from services.message_converter import db_messages_to_lc_messages
 from langchain_openai import ChatOpenAI
+from services.agent import get_agent_response
 
 router = APIRouter()
 
 from services.agent_manager import AgentManager
 
-def get_agent_manager_dependency(request: Request) -> AgentManager:
-    manager = request.app.state.agent_manager
-    if manager is None:
-        raise HTTPException(status_code=503, detail="AgentManager is not initialized.")
-    return manager
+from api import deps
 
-def get_llm_instance_dependency(request: Request) -> ChatOpenAI:
-    llm_instance = request.app.state.llm_instance
-    if llm_instance is None:
-        raise HTTPException(status_code=503, detail="LLM is not initialized.")
-    return llm_instance
 
 @router.post("/", response_model=ChatSessionResponse, status_code=201)
 async def create_session(
     session_data: SessionCreate, 
-    db: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user),
-    agent_manager: AgentManager = Depends(get_agent_manager_dependency),
-    llm_instance: ChatOpenAI = Depends(get_llm_instance_dependency)
+    db: deps.SessionDep,
+    current_user: deps.UserDep,
+    agent_manager: deps.AgentManagerDep,
+    llm_instance: deps.LLMDep
 ):
     """Starts a new chat session for a user."""
         
@@ -72,10 +62,10 @@ async def create_session(
 @router.post("/chat", response_model=MessageResponse)
 async def send_message(
     message_data: MessageRequest, 
-    db: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user),
-    agent_manager: AgentManager = Depends(get_agent_manager_dependency),
-    llm_instance: ChatOpenAI = Depends(get_llm_instance_dependency)
+    db: deps.SessionDep,
+    current_user: deps.UserDep,
+    agent_manager: deps.AgentManagerDep,
+    llm_instance: deps.LLMDep
 ):
     """Sends a new message to an existing chat session."""
         
@@ -115,7 +105,7 @@ async def send_message(
     )
 
 @router.get("/{session_id}", response_model=ChatSessionResponse)
-async def get_session(session_id: str, db: AsyncSession = Depends(get_db_session), current_user: User = Depends(get_current_user)):
+async def get_session(session_id: str, db: deps.SessionDep, current_user: deps.UserDep):
     """Retrieves a specific chat session and all its messages."""
     session = await chat_crud.get_chat_session(db, session_id)
     if not session or session.user_id != current_user.id:
@@ -133,7 +123,7 @@ async def get_session(session_id: str, db: AsyncSession = Depends(get_db_session
     )
 
 @router.get("/user/", response_model=SessionListResponse)
-async def list_user_sessions(db: AsyncSession = Depends(get_db_session), current_user: User = Depends(get_current_user)):
+async def list_user_sessions(db: deps.SessionDep, current_user: deps.UserDep):
     """Lists all chat sessions for a specific user."""
     sessions = await chat_crud.get_user_sessions(db, current_user.id)
     return SessionListResponse(
@@ -150,7 +140,7 @@ async def list_user_sessions(db: AsyncSession = Depends(get_db_session), current
     )
 
 @router.delete("/{session_id}", status_code=204)
-async def delete_session(session_id: str, db: AsyncSession = Depends(get_db_session), current_user: User = Depends(get_current_user)):
+async def delete_session(session_id: str, db: deps.SessionDep, current_user: deps.UserDep):
     """Deletes a specific chat session and all its messages."""
     session = await chat_crud.get_chat_session(db, session_id)
     if not session or session.user_id != current_user.id:

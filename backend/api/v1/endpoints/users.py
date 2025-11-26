@@ -1,23 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Any
-from crud import user as user_crud
+from services import user as user_crud
 from core.schemas import UserSchema
 from models.user import User
-from core.database import get_db_session
-from services.auth import get_current_user
 from services.agent_manager import AgentManager
+
 
 router = APIRouter()
 
-def get_agent_manager_dependency(request: Request) -> AgentManager:
-    manager = request.app.state.agent_manager
-    if manager is None:
-        raise HTTPException(status_code=503, detail="AgentManager is not initialized.")
-    return manager
+from api import deps
+
 
 @router.get("/me", response_model=UserSchema)
-async def read_users_me(current_user: User = Depends(get_current_user)):
+async def read_users_me(current_user: deps.UserDep):
     """
     Get current user.
     """
@@ -26,9 +22,9 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
 @router.put("/me/mcp-config", response_model=UserSchema)
 async def update_mcp_config(
     mcp_config: Dict[str, Any],
-    db: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user),
-    agent_manager: AgentManager = Depends(get_agent_manager_dependency)
+    db: deps.SessionDep,
+    current_user: deps.UserDep,
+    agent_manager: deps.AgentManagerDep
 ):
     """
     Update the current user's MCP configuration.
