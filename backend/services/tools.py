@@ -17,16 +17,22 @@ async def setup_tools(llm: Any, mcp_config: dict = None) -> List[Any]:
     try:
         # Check if config is valid (has headers/auth)
         # We iterate over the config to check for validity
-        valid_config = True
+        # Filter for valid servers
+        valid_servers = {}
         for server_name, server_details in server_config.items():
-             if not server_details.get('headers') or not server_details['headers'].get('Authorization') or "YOUR_GITHUB_TOKEN_HERE" in server_details['headers']['Authorization']:
+             # Check if it's a known public server or has valid auth
+             is_public = server_name in config.PUBLIC_MCP_SERVERS
+             has_auth = server_details.get('headers') and server_details['headers'].get('Authorization') and "YOUR_GITHUB_TOKEN_HERE" not in server_details['headers']['Authorization']
+             
+             if is_public or has_auth:
+                 valid_servers[server_name] = server_details
+             else:
                  print(f"⚠️ MCP Server '{server_name}' missing valid Authorization. Skipping.")
-                 valid_config = False
         
-        if valid_config and server_config:
-            client = MultiServerMCPClient(server_config)
+        if valid_servers:
+            client = MultiServerMCPClient(valid_servers)
             mcp_tools = await client.get_tools()
-            print(f"✅ MCP tools fetched successfully. Found {len(mcp_tools)} tools.")
+            print(f"✅ MCP tools fetched successfully. Found {len(mcp_tools)} tools from {list(valid_servers.keys())}.")
         else:
              print("ℹ️ No valid MCP servers configured or auth missing.")
 

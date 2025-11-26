@@ -4,7 +4,7 @@ from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
-from db.session import get_db_session
+from core.database import get_db_session
 from crud import user as user_crud
 from models.user import User
 from schemas.user import TokenData

@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from crud import user as user_crud
 from schemas.user import UserCreate, UserSchema, Token
-from db.session import get_db_session
+from core.database import get_db_session
 from services.auth import create_access_token
 from core.security import verify_password
 

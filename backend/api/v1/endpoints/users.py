@@ -4,7 +4,7 @@ from typing import Dict, Any
 from crud import user as user_crud
 from schemas.user import UserSchema
 from models.user import User
-from db.session import get_db_session
+from core.database import get_db_session
 from services.auth import get_current_user
 from services.agent_manager import AgentManager
 

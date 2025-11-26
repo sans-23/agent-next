@@ -1,8 +1,7 @@
 from fastapi import FastAPI # type: ignore
 from contextlib import asynccontextmanager
 from core import config
-from db.base import Base
-from db.session import engine
+from core.database import Base, engine
 from api.v1.api import api_router
 from services.llm import initialize_llm
 from services.tools import setup_tools

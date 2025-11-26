@@ -5,7 +5,7 @@ from services.auth import get_current_user
 from models.user import User
 from crud import chat as chat_crud
 from crud import user as user_crud
-from db.session import get_db_session
+from core.database import get_db_session
 from services.agent import get_agent_response # Removed _agent_executor import
 from langchain.agents import AgentExecutor # type: ignore
 from services.message_converter import db_messages_to_lc_messages

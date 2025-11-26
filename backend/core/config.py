@@ -46,5 +46,13 @@ DEFAULT_MCP_CONFIG = {
         "headers": {
             "Authorization": "Bearer <YOUR_GITHUB_TOKEN_HERE>"
         }
+    },
+    "socket": {
+        "transport": "streamable_http",
+        "url": "https://mcp.socket.dev/",
+        "headers": {}
     }
 }
+
+# --- Public MCP Servers (No Auth Required) ---
+PUBLIC_MCP_SERVERS = ["socket", "backdocket"]

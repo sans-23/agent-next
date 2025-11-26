@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, String, JSON, DateTime, ForeignKey # type: ignore
+from sqlalchemy import Column, Integer, String, JSON, DateTime, ForeignKey, Text # type: ignore
 from sqlalchemy.sql import func # type: ignore
-from db.base import Base
+from core.database import Base
 
 class ChatSession(Base):
     __tablename__ = "chat_sessions"

@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, String, DateTime, JSON # type: ignore
+from sqlalchemy import Column, Integer, String, DateTime, JSON
+from core.database import Base
 from sqlalchemy.sql import func # type: ignore
-from db.base import Base
 from core.config import DEFAULT_MCP_CONFIG
 
 class User(Base):
