@@ -4,7 +4,7 @@ from langchain.agents import AgentExecutor
 from langchain_openai import ChatOpenAI
 from services.agent import create_mcp_agent_executor
 from services.tools import setup_tools
-from schemas.user import UserSchema
+from core.schemas import UserSchema
 from core import config
 import logging
 

@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from models.user import User
-from schemas.user import UserCreate
+from core.schemas import UserCreate
 from core.security import get_password_hash
 
 async def get_user_by_username(db: AsyncSession, username: str):

@@ -3,7 +3,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 from langchain.agents import create_openai_tools_agent, AgentExecutor
 from langchain_core.messages import AIMessage, HumanMessage, BaseMessage
-from schemas.chat import LLMOutputBlock
+from core.schemas import LLMOutputBlock
 import logging
 
 def create_mcp_agent_executor(llm_instance: ChatOpenAI, tools_list: List[Any]) -> Optional[AgentExecutor]:

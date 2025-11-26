@@ -3,7 +3,7 @@ from sqlalchemy.future import select
 from models.chat import ChatSession, ChatMessage
 from uuid import uuid4
 from typing import List
-from schemas.chat import LLMOutputBlock
+from core.schemas import LLMOutputBlock
 
 async def create_chat_session(db: AsyncSession, user_id: int, initial_message: str):
     session_id = str(uuid4())

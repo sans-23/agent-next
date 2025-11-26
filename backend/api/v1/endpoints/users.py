@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Any
 from crud import user as user_crud
-from schemas.user import UserSchema
+from core.schemas import UserSchema
 from models.user import User
 from core.database import get_db_session
 from services.auth import get_current_user
